@@ -36,3 +36,9 @@ VALIDATE $? "installing mongodb"
 
 systemctl enable --now mongod
 VALIDATE $? "starting and enabling mongodb"
+
+sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
+VALIDATE $? "allowing remote connections to mongodb"
+
+systemctl restart mongod
+VALIDATE $? "restarting mongodb"
