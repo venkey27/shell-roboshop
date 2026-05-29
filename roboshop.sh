@@ -30,7 +30,7 @@ do
 
     # updating R53 record
     aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch '{
-        "Comments": "update A record to new IP"  
+        "Comment": "update A record to new IP",  
         "Changes": [
             {
                 "Action": "UPSERT",
