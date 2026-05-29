@@ -29,7 +29,7 @@ do
     fi
 
     # updating R53 record
-    aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch "{
+    aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch '{
         "Comments": "update A record to new IP"  
         "Changes": [
             {
@@ -46,5 +46,5 @@ do
                 }
             }
         ]
-    }"
+    }'
 done
