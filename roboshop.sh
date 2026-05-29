@@ -7,22 +7,23 @@ DOMAIN_NAME="exptrack.shop"  #REPLACE WITH YOUR DOMAIN NAME
 for instance in $@
 do
     echo "Launching ec2 instance : $instance"
-    INSTANCE_iD=$(aws ec2 run-instances \
-    --image-id ami-0220d79f3f480ecf5 \
-    --instance-type t3.micro \
-    --security-groups "roboshop-common" "roboshop-$instance" \
-	--tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value="roboshop-$instance"}]' \
-	--query 'Instances[0].InstanceId' \
-    --output text)
-    echo "instance ID : $INSTANCE_iD"
+    INSTANCE_ID=$(aws ec2 run-instances \
+        --image-id ami-0220d79f3f480ecf5 \
+        --instance-type t3.micro \
+        --security-groups "roboshop-common" "roboshop-$instance" \
+	    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=roboshop-$instance}]" \
+	    --query 'Instances[0].InstanceId' \
+        --output text
+    )
+    echo "instance ID : $INSTANCE_ID"
 
     if [ $instance == "frontend" ]; then
-        IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_iD --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+        IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
         echo "Public IP is: $IP"
         R53_RECORD="$DOMAIN_NAME"
 
     else
-        IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_iD --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)
+        IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)
         echo "Private IP is: $IP"
         R53_RECORD="$instance.$DOMAIN_NAME"
     fi
