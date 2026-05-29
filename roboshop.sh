@@ -1,8 +1,8 @@
 #! /bin/bash
 
-AMI_ID=ami-0220d79f3f480ecf5
-ZONE_ID=Z07587789JER0QOC5489 #REPLACE WITH YOUR ZONE ID
-DOMAIN_NAME=exptrack.shop  #REPLACE WITH YOUR DOMAIN NAME
+AMI_ID="ami-0220d79f3f480ecf5"
+ZONE_ID="Z07587789JER0QOC5489" #REPLACE WITH YOUR ZONE ID
+DOMAIN_NAME="exptrack.shop"  #REPLACE WITH YOUR DOMAIN NAME
 
 for instance in $@
 do
@@ -18,10 +18,32 @@ do
 
     if [ $instance == "frontend" ]; then
         IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_iD --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
-        echo "Publice IP is: $IP"
+        echo "Public IP is: $IP"
+        R53_RECORD="$DOMAIN_NAME"
 
     else
         IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_iD --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)
         echo "Private IP is: $IP"
+        R53_RECORD="$instance.$DOMAIN_NAME"
     fi
+
+    # updating R53 record
+    aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch "{
+        "Comments": "update A record to new IP"  
+        "Changes": [
+            {
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                    "Name": "'$R53_RECORD'",
+                    "Type": "A",
+                    "TTL": 1,
+                    "ResourceRecords": [
+                        {
+                            "Value": "'$IP'"
+                        }
+                    ]
+                }
+            }
+        ]
+    }"
 done
