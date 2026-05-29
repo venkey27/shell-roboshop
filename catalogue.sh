@@ -34,8 +34,15 @@ dnf module enable nodejs:20 -y &>> $LOGS_FILE
 dnf install nodejs -y &>> $LOGS_FILE
 VALIDATE $? "installing nodejs"
 
-useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop
-VALIDATE $? "creating roboshop user"
+id roboshop &>> $LOGS_FILE
+if [ $? -ne 0 ]; then
+    useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>> $LOGS_FILE
+    VALIDATE $? "creating roboshop user"
+else
+    echo -e " $TIMESTAMP [INFO]  roboshop user already exists ... $G skipping user creation $N " | tee -a $LOGS_FILE        
+fi
 
-mkdir /app &>> $LOGS_FILE
+
+mkdir -p /app &>> $LOGS_FILE
 VALIDATE $? "creating application directory"
+ 
