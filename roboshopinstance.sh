@@ -18,7 +18,7 @@ fi
 
 ACTION=$1
 shift # shift command is used to shift the positional parameters to the left. After this command, $1 will be the second argument, $2 will be the third argument, and so on. This allows us to easily access the instance names in the loop below.           
-############################################################## != is used for string comparison. It checks if the value of ACTION is not equal to "create" and also not equal to "delete". If both conditions are true, it means an invalid action was specified.
+                                                            # != is used for string comparison. It checks if the value of ACTION is not equal to "create" and also not equal to "delete". If both conditions are true, it means an invalid action was specified.
 if [ $ACTION != "create" ] && [ $ACTION != "delete" ]; then  # && is used for logical AND operation. It checks if both conditions are true. this condition checks if the ACTION variable is not equal to "create" and also not equal to "delete". If both conditions are true, it means an invalid action was specified.
     echo -e "${R}ERROR:: first argument must be 'create' or 'delete'. Use 'create' or 'delete'.${N}"
     echo "USAGE: $0 [create/delete] [instance1] [instance2] ..."
@@ -46,6 +46,38 @@ do
             --output text
             )
             echo "launched instance ID : $INSTANCE_ID"
+
+            #updating R53 record
+            if [ $instance == "frontend" ]; then
+                IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+                echo "Public IP is: $IP"
+                R53_RECORD="$DOMAIN_NAME"
+
+            else
+                IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)
+                echo "Private IP is: $IP"
+                R53_RECORD="$instance.$DOMAIN_NAME"
+            fi
+
+            aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch '{
+                "Comment": "update A record to new IP",  
+                "Changes": [
+                    {
+                        "Action": "UPSERT",
+                        "ResourceRecordSet": {
+                            "Name": "'$R53_RECORD'",
+                            "Type": "A",
+                            "TTL": 1,
+                            "ResourceRecords": [
+                                {
+                                    "Value": "'$IP'"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }'
+            echo "updated R53 record for $instance"
         else
             echo -e "${Y}INFO:: Instance roboshop-$instance already exists with ID $INSTANCE_ID. Skipping creation.${N}"
         fi
