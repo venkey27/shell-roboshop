@@ -53,7 +53,7 @@ VALIDATE $? "creating application directory"
 
 curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip &>> $LOGS_FILE
 cd /app 
-unzip /tmp/catalogue.zip
+unzip /tmp/catalogue.zip &>> $LOGS_FILE
 VALIDATE $? "downloading and extracting catalogue code"
  
 
