@@ -5,7 +5,7 @@ sudo mkdir -p $LOGS_FOLDER
 sudo chown -R ec2-user:ec2-user $LOGS_FOLDER
 sudo chmod -R 755 $LOGS_FOLDER
 LOGS_FILE="$LOGS_FOLDER/$0.log"
-
+SCRIPT_DIR=$PWD
 
 USERID=$(id -u)
 R='\e[31m'
@@ -42,7 +42,30 @@ else
     echo -e " $TIMESTAMP [INFO]  roboshop user already exists ... $G skipping user creation $N " | tee -a $LOGS_FILE        
 fi
 
+rm -rf /app &>> $LOGS_FILE
+VALIDATE $? "removing existing application code"
+
+rm -rf /tmp/catalogue.zip &>> $LOGS_FILE
+VALIDATE $? "removing existing catalogue zip"
 
 mkdir -p /app &>> $LOGS_FILE
 VALIDATE $? "creating application directory"
+
+curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip &>> $LOGS_FILE
+cd /app 
+unzip /tmp/catalogue.zip
+VALIDATE $? "downloading and extracting catalogue code"
  
+
+npm install &>> $LOGS_FILE
+VALIDATE $? "installing nodejs dependencies"
+
+cp $SCRIPT_DIR/catalogue.service /etc/systemd/system/catalogue.service # this is the service file which we have created in our local and we are copying it to the systemd directory to avoid any issues with the path of the service file
+VALIDATE $? "copying catalogue systemd service file"
+
+cp $SCRIPT_DIR/mongo.repo /etc/yum.repos.d/mongo.repo
+VALIDATE $? "adding mongo repo file"
+
+dnf install mongodb-mongosh -y &>> $LOGS_FILE
+VALIDATE $? "installing mongodb client"
+
