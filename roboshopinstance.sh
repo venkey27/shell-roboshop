@@ -26,7 +26,7 @@ if [ $ACTION != "create" ] && [ $ACTION != "delete" ]; then  # && is used for lo
 fi
 
 get_instance_id() {
-    aws ec2 describe-instances --filters "Name=tag:Name,Values=shell-practice" "Name=instance-state-name,Values=running" --query
+    aws ec2 describe-instances --filters "Name=tag:Name,Values=roboshop-$name" "Name=instance-state-name,Values=running" --query
      'Reservations[0].Instances[0].InstanceId' --output text
 }
 
