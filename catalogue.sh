@@ -69,3 +69,16 @@ VALIDATE $? "adding mongo repo file"
 dnf install mongodb-mongosh -y &>> $LOGS_FILE
 VALIDATE $? "installing mongodb client"
 
+INDEX=$(mongosh --host mongodb.exptrack.shop --eval 'db.getMongo().getDBnames().indexOf("catalogue")')
+
+if [ $INDEX -lt 0 ]; then
+    mongosh --host mongodb.exptrack.shop < /app/db/master-data.js &>> $LOGS_FILE
+    VALIDATE $? "load products data to catalogue database"
+else        
+    echo -e " $TIMESTAMP [INFO]  catalogue database already exists ... $G skipping database initialization$N " | tee -a $LOGS_FILE
+fi
+
+systemctl enable catalogue &>> $LOGS_FILE
+systemctl restart catalogue &>> $LOGS_FILE
+VALIDATE $? "restarting and enabling catalogue service"
+
