@@ -18,9 +18,35 @@ fi
 
 ACTION=$1
 shift # shift command is used to shift the positional parameters to the left. After this command, $1 will be the second argument, $2 will be the third argument, and so on. This allows us to easily access the instance names in the loop below.           
-                                                             # != is used for string comparison. It checks if the value of ACTION is not equal to "create" and also not equal to "delete". If both conditions are true, it means an invalid action was specified.
+############################################################## != is used for string comparison. It checks if the value of ACTION is not equal to "create" and also not equal to "delete". If both conditions are true, it means an invalid action was specified.
 if [ $ACTION != "create" ] && [ $ACTION != "delete" ]; then  # && is used for logical AND operation. It checks if both conditions are true. this condition checks if the ACTION variable is not equal to "create" and also not equal to "delete". If both conditions are true, it means an invalid action was specified.
     echo -e "${R}ERROR:: first argument must be 'create' or 'delete'. Use 'create' or 'delete'.${N}"
     echo "USAGE: $0 [create/delete] [instance1] [instance2] ..."
     exit 1
 fi
+
+get_instance_id() {
+    aws ec2 describe-instances --filters "Name=tag:Name,Values=shell-practice" "Name=instance-state-name,Values=running" --query
+     'Reservations[0].Instances[0].InstanceId' --output text
+}
+
+for instance in $@
+do
+    INSTANCE_ID=$(get_instance_id $instance)
+    if [ $ACTION == "create" ]; then
+        if [ $INSTANCE_ID == "None" ]; then
+            echo "Launching ec2 instance : roboshop-$instance"
+            INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id ami-0220d79f3f480ecf5 \
+            --instance-type t3.micro \
+            --security-groups "roboshop-common" "roboshop-$instance" \
+	        --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=roboshop-$instance}]" \
+	        --query 'Instances[0].InstanceId' \
+            --output text
+            )
+            echo "launched instance ID : $INSTANCE_ID"
+        else
+            echo -e "${Y}INFO:: Instance roboshop-$instance already exists with ID $INSTANCE_ID. Skipping creation.${N}"
+        fi
+    fi
+ done
