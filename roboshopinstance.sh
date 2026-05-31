@@ -47,39 +47,41 @@ do
             )
             echo "launched instance ID : $INSTANCE_ID"
 
-            #updating R53 record
-            if [ $instance == "frontend" ]; then
-                IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
-                echo "Public IP is: $IP"
-                R53_RECORD="$DOMAIN_NAME"
-
-            else
-                IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)
-                echo "Private IP is: $IP"
-                R53_RECORD="$instance.$DOMAIN_NAME"
-            fi
-
-            aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch '{
-                "Comment": "update A record to new IP",  
-                "Changes": [
-                    {
-                        "Action": "UPSERT",
-                        "ResourceRecordSet": {
-                            "Name": "'$R53_RECORD'",
-                            "Type": "A",
-                            "TTL": 1,
-                            "ResourceRecords": [
-                                {
-                                    "Value": "'$IP'"
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }'
-            echo "updated R53 record for $instance"
         else
             echo -e "${Y}INFO:: Instance roboshop-$instance already exists with ID $INSTANCE_ID. Skipping creation.${N}"
         fi
+
+        
+        #updating R53 record
+        if [ $instance == "frontend" ]; then
+            IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+            echo "Public IP is: $IP"
+            R53_RECORD="$DOMAIN_NAME"
+
+        else
+            IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)
+            echo "Private IP is: $IP"
+               R53_RECORD="$instance.$DOMAIN_NAME"
+        fi  
+
+        aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch '{
+            "Comment": "update A record to new IP",  
+            "Changes": [
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Name": "'$R53_RECORD'",
+                        "Type": "A",
+                        "TTL": 1,
+                        "ResourceRecords": [
+                            {
+                                "Value": "'$IP'"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }'
+            echo "updated R53 record for $instance"
     fi
  done
